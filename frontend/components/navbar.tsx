@@ -10,7 +10,6 @@ import { useAuthStore } from "@/lib/auth-store";
 
 const navItems = [
   { label: "Trang Chủ", href: "/" },
-  { label: "Ngành Đào Tạo", href: "/majors" },
   { label: "Về Chúng Tôi", href: "/about" },
   { label: "Thông Báo", href: "/announcements" },
   { label: "Tin Tức", href: "/news" },
@@ -38,7 +37,7 @@ export function Navbar() {
       setAuthModalOpen(true);
     } else if (user.role === "candidate") {
       router.push("/candidate/portal");
-    } else if (user.role === "admin") {
+    } else if (user.role === "content_admin" || user.role === "system_admin") {
       router.push("/admin");
     }
   };
@@ -85,7 +84,7 @@ export function Navbar() {
                   Xin chào, {user.fullName || user.username}
                 </span>
 
-                {user.role === "admin" && (
+                {(user.role === "content_admin" || user.role === "system_admin") && (
                   <Button
                     className="hidden gap-2 bg-blue-600 hover:bg-blue-700 sm:flex"
                     asChild
@@ -168,7 +167,7 @@ export function Navbar() {
               ))}
               {user ? (
                 <>
-                  {user.role === "admin" && (
+                  {(user.role === "content_admin" || user.role === "system_admin") && (
                     <Button
                       className="mt-3 w-full gap-2 bg-blue-600 hover:bg-blue-700"
                       asChild

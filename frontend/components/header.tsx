@@ -80,7 +80,7 @@ export function Header() {
                       Hồ sơ cá nhân
                     </Link>
                   </DropdownMenuItem>
-                  {user?.role === "admin" && (
+                  {(user?.role === "content_admin" || user?.role === "system_admin") && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="flex items-center gap-2">
                         <ArrowRight className="w-4 h-4" />

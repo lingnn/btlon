@@ -5,7 +5,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 
 export default function AdminPage() {
   return (
-    <ProtectedRoute requiredRole="admin">
+    <ProtectedRoute>
       <AdminDashboard />
     </ProtectedRoute>
   );

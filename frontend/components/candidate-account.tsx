@@ -60,7 +60,7 @@ export function CandidateAccount() {
           username: updated.username || user.username,
           email: updated.email || profileForm.email || user.email,
           fullName: updated.fullName || profileForm.fullName || user.fullName,
-          role: (updated.role || user.role) as 'admin' | 'candidate',
+          role: (updated.role || user.role) as 'candidate' | 'content_admin' | 'system_admin',
           phone: updated.phone || profileForm.phone || user.phone,
         };
         setUser(nextUser);

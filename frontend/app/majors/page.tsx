@@ -41,7 +41,9 @@ export default function MajorsPage() {
     description: '',
   });
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin =
+    user?.role === 'content_admin' ||
+    user?.role === 'system_admin';
 
   const fetcher = async (): Promise<Major[]> => {
     const res = await api.major.getAll();

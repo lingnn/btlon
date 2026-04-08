@@ -8,16 +8,15 @@ const {
   deleteMethod,
   toggleActive
 } = require('../controllers/admissionMethodController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, requireRoles, ROLES } = require('../middleware/authMiddleware');
 
-// Công khai - dùng cho form đăng ký của thí sinh (có thể cần đăng nhập? Thường là công khai)
 router.get('/', getAllMethods);
 router.get('/:id', getMethodById);
 
 // Admin only
-router.post('/', protect, adminOnly, createMethod);
-router.put('/:id', protect, adminOnly, updateMethod);
-router.delete('/:id', protect, adminOnly, deleteMethod);
-router.patch('/:id/toggle', protect, adminOnly, toggleActive);
+router.post('/', protect, requireRoles(ROLES.CONTENT_ADMIN), createMethod);
+router.put('/:id', protect, requireRoles(ROLES.CONTENT_ADMIN), updateMethod);
+router.delete('/:id', protect, requireRoles(ROLES.CONTENT_ADMIN), deleteMethod);
+router.patch('/:id/toggle', protect, requireRoles(ROLES.CONTENT_ADMIN), toggleActive);
 
 module.exports = router;

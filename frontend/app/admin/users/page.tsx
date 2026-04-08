@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { Search, Users, UserCheck, UserRound, Eye } from "lucide-react";
+import { useSWRConfig } from "swr";
+import { Search, Users, UserCheck, UserRound, Eye, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import api, { AdminUser, UserDetailResponse, UserSummary } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const applicationStatusLabel: Record<string, string> = {
   draft: "Bản nháp",
@@ -34,10 +36,18 @@ const applicationStatusLabel: Record<string, string> = {
   rejected: "Từ chối",
 };
 
+const roleLabel: Record<AdminUser["role"], string> = {
+  candidate: "Thí sinh",
+  content_admin: "Quản trị nội dung",
+  system_admin: "Quản trị hệ thống",
+};
+
 export default function AdminUsersPage() {
-  const { token } = useAuthStore();
+  const { token, user: currentUser } = useAuthStore();
+  const { mutate } = useSWRConfig();
   const [search, setSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState<string | null>(null);
 
   const accessToken =
     token ||
@@ -63,6 +73,38 @@ export default function AdminUsersPage() {
     accessToken && selectedUserId ? ["/admin/users/detail", accessToken, selectedUserId] : null,
     ([, tokenValue, userId]) => api.users.getDetail(tokenValue, userId)
   );
+
+  const handleRoleChange = async (
+    userId: string,
+    nextRole: "candidate" | "content_admin" | "system_admin"
+  ) => {
+    if (!accessToken) {
+      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      return;
+    }
+
+    try {
+      const targetUser = users.find((item) => item._id === userId);
+      if (targetUser && targetUser.role === nextRole) {
+        return;
+      }
+
+      setUpdatingRoleUserId(userId);
+      await api.users.updateRole(accessToken, userId, nextRole);
+      toast.success("Cập nhật vai trò thành công");
+      await Promise.all([
+        mutate(["/admin/users", accessToken]),
+        mutate(["/admin/users/summary", accessToken]),
+        selectedUserId === userId
+          ? mutate(["/admin/users/detail", accessToken, userId])
+          : Promise.resolve(),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cập nhật vai trò thất bại");
+    } finally {
+      setUpdatingRoleUserId(null);
+    }
+  };
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -124,7 +166,9 @@ export default function AdminUsersPage() {
             <div className="text-3xl font-bold text-foreground">
               {isLoadingSummary
                 ? "..."
-                : (summary?.totalAdmins ?? users.filter((u) => u.role === "admin").length).toLocaleString("vi-VN")}
+                : (summary?.totalAdmins
+                    ?? users.filter((u) => u.role === "system_admin" || u.role === "content_admin").length
+                  ).toLocaleString("vi-VN")}
             </div>
           </CardContent>
         </Card>
@@ -153,6 +197,7 @@ export default function AdminUsersPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Số điện thoại</TableHead>
                   <TableHead>Vai trò</TableHead>
+                  <TableHead>Phân quyền</TableHead>
                   <TableHead>Ngày tạo</TableHead>
                   <TableHead className="text-right">Chi tiết</TableHead>
                 </TableRow>
@@ -160,13 +205,13 @@ export default function AdminUsersPage() {
               <TableBody>
                 {isLoadingUsers ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500">
+                    <TableCell colSpan={8} className="text-center text-gray-500">
                       Đang tải dữ liệu...
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500">
+                    <TableCell colSpan={8} className="text-center text-gray-500">
                       Không có người dùng phù hợp
                     </TableCell>
                   </TableRow>
@@ -178,9 +223,42 @@ export default function AdminUsersPage() {
                       <TableCell>{user.email || "-"}</TableCell>
                       <TableCell>{user.phone || "-"}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                          {user.role === "admin" ? "Quản trị" : "Thí sinh"}
+                        <Badge
+                          variant={
+                            user.role === "candidate"
+                              ? "secondary"
+                              : user.role === "content_admin"
+                                ? "outline"
+                                : "default"
+                          }
+                        >
+                          {roleLabel[user.role]}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={user.role}
+                            onChange={(e) =>
+                              handleRoleChange(
+                                user._id,
+                                e.target.value as "candidate" | "content_admin" | "system_admin"
+                              )
+                            }
+                            disabled={
+                              updatingRoleUserId === user._id ||
+                              currentUser?.id === user._id
+                            }
+                            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                          >
+                            <option value="candidate">Thí sinh</option>
+                            <option value="content_admin">Quản trị nội dung</option>
+                            <option value="system_admin">Quản trị hệ thống</option>
+                          </select>
+                          {updatingRoleUserId === user._id && (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {user.createdAt
@@ -254,7 +332,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Vai trò</p>
-                    <p className="font-medium">{selectedUserDetail.user.role === "admin" ? "Quản trị" : "Thí sinh"}</p>
+                    <p className="font-medium">{roleLabel[selectedUserDetail.user.role]}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Ngày tạo tài khoản</p>

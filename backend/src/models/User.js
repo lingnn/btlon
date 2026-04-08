@@ -7,7 +7,11 @@ const userSchema = new mongoose.Schema({
   email: String,
   phone: String,
   idNumber: { type: String, unique: true, sparse: true },
-  role: { type: String, enum: ['candidate', 'admin'], default: 'candidate' }
+  role: {
+    type: String,
+    enum: ['candidate', 'content_admin', 'system_admin'],
+    default: 'candidate',
+  }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

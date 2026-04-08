@@ -1,5 +1,11 @@
 const jwt = require('jsonwebtoken');
 
+const ROLES = {
+  CANDIDATE: 'candidate',
+  CONTENT_ADMIN: 'content_admin',
+  SYSTEM_ADMIN: 'system_admin',
+};
+
 const protect = (req, res, next) => {
   let token = req.headers.authorization;
   if (token && token.startsWith('Bearer')) {
@@ -17,11 +23,25 @@ const protect = (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && [ROLES.SYSTEM_ADMIN, ROLES.CONTENT_ADMIN].includes(req.user.role)) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied. Admin only.' });
   }
 };
 
-module.exports = { protect, adminOnly };
+const requireRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    if (allowedRoles.includes(req.user.role)) {
+      return next();
+    }
+
+    return res.status(403).json({ message: 'Access denied. Insufficient permission.' });
+  };
+};
+
+module.exports = { protect, adminOnly, requireRoles, ROLES };

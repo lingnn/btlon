@@ -20,15 +20,43 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 
-const sidebarItems = [
-  { label: "Tổng quan", href: "/admin", icon: LayoutDashboard },
+type AdminRole = "candidate" | "content_admin" | "system_admin";
+
+const contentPrefixes = [
+  "/admin",
+  "/admin/dashboard",
+  "/admin/applications",
+  "/admin/announcements",
+  "/admin/majors",
+  "/admin/methods",
+];
+
+const systemPrefixes = [
+  "/admin/users",
+  "/admin/settings",
+];
+
+const contentSidebarItems = [
+  { label: "Thống kê", href: "/admin", icon: LayoutDashboard },
   { label: "Quản lý hồ sơ", href: "/admin/applications", icon: FileText },
-  { label: "Quản lý thông báo", href: "/admin/announcements", icon: Bell },
-  { label: "Quản lý người dùng", href: "/admin/users", icon: Users },
+  { label: "Quản trị bài viết", href: "/admin/announcements", icon: Bell },
   { label: "Quản lý ngành học", href: "/admin/majors", icon: BookOpen },
   { label: "Quản lý phương thức", href: "/admin/methods", icon: Cog },
+];
+
+const systemSidebarItems = [
+  { label: "Quản lý người dùng", href: "/admin/users", icon: Users },
   { label: "Cài đặt", href: "/admin/settings", icon: Settings },
 ];
+
+const canAccessPath = (pathname: string, allowedPrefixes: string[]) => {
+  return allowedPrefixes.some((prefix) => {
+    if (prefix === "/admin") {
+      return pathname === "/admin";
+    }
+    return pathname === prefix || pathname.startsWith(`${prefix}/`);
+  });
+};
 
 export default function AdminLayout({
   children,
@@ -39,16 +67,35 @@ export default function AdminLayout({
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
 
+  const normalizedRole = user?.role as AdminRole | undefined;
+  const isContentAdmin = normalizedRole === "content_admin";
+  const isSystemAdmin = normalizedRole === "system_admin";
+  const allowedPrefixes = isContentAdmin ? contentPrefixes : isSystemAdmin ? systemPrefixes : [];
+  const sidebarItems = isContentAdmin ? contentSidebarItems : isSystemAdmin ? systemSidebarItems : [];
+
   useEffect(() => {
-    if (!isAuthenticated || !user || user.role !== "admin") {
+    if (!isAuthenticated || !user) {
       if (!isAuthenticated) {
         toast.error("Vui lòng đăng nhập");
-      } else if (user?.role !== "admin") {
+      } else {
         toast.error("Bạn không có quyền truy cập trang này");
       }
       router.push("/login");
+      return;
     }
-  }, [isAuthenticated, user, router]);
+
+    if (!isContentAdmin && !isSystemAdmin) {
+      toast.error("Bạn không có quyền truy cập trang quản trị");
+      router.push("/unauthorized");
+      return;
+    }
+
+    if (!canAccessPath(pathname, allowedPrefixes)) {
+      toast.error("Bạn không có quyền truy cập khu vực này");
+      router.push(isContentAdmin ? "/admin" : "/admin/users");
+      return;
+    }
+  }, [isAuthenticated, user, pathname, router, isContentAdmin, isSystemAdmin, allowedPrefixes]);
 
   const handleLogout = () => {
     logout();
@@ -56,7 +103,7 @@ export default function AdminLayout({
     router.push("/");
   };
 
-  if (!isAuthenticated || !user || user.role !== "admin") {
+  if (!isAuthenticated || !user || (!isContentAdmin && !isSystemAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -76,7 +123,9 @@ export default function AdminLayout({
             </div>
             <div>
               <div className="font-bold text-gray-900">PTIT Admin</div>
-              <div className="text-xs text-gray-500">Quản trị hệ thống</div>
+              <div className="text-xs text-gray-500">
+                {isContentAdmin ? "Quản trị nội dung" : "Quản trị hệ thống"}
+              </div>
             </div>
           </div>
 

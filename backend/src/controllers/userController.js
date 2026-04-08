@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Application = require('../models/Application');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { ROLES } = require('../middleware/authMiddleware');
 
 // Helper: generate JWT
 const generateToken = (id, role) => {
@@ -13,7 +14,7 @@ const generateToken = (id, role) => {
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { username, password, fullName, email, phone, idNumber, role } = req.body;
+    const { username, password, fullName, email, phone, idNumber } = req.body;
 
     if (!username || !password || !idNumber) {
       return res.status(400).json({ message: 'Thiếu username, password hoặc idNumber' });
@@ -55,7 +56,7 @@ const register = async (req, res) => {
       email,
       phone,
       idNumber,
-      role: role || 'candidate'
+      role: ROLES.CANDIDATE,
     });
 
     const token = generateToken(user._id, user.role);
@@ -222,16 +223,63 @@ const getAllUsers = async (req, res) => {
 // @access  Private/Admin
 const getUserSummary = async (req, res) => {
   try {
-    const [totalUsers, totalAdmins, totalCandidates] = await Promise.all([
+    const [
+      totalUsers,
+      totalSystemAdmins,
+      totalContentAdmins,
+      totalCandidates,
+    ] = await Promise.all([
       User.countDocuments({}),
-      User.countDocuments({ role: 'admin' }),
-      User.countDocuments({ role: 'candidate' })
+      User.countDocuments({ role: ROLES.SYSTEM_ADMIN }),
+      User.countDocuments({ role: ROLES.CONTENT_ADMIN }),
+      User.countDocuments({ role: ROLES.CANDIDATE }),
     ]);
+
+    const totalAdmins = totalSystemAdmins + totalContentAdmins;
 
     res.json({
       totalUsers,
       totalAdmins,
-      totalCandidates
+      totalSystemAdmins,
+      totalContentAdmins,
+      totalCandidates,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update role of a user (system admin only)
+// @route   PATCH /api/users/:id/role
+// @access  Private/SystemAdmin
+const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const allowedTargetRoles = [ROLES.CANDIDATE, ROLES.CONTENT_ADMIN, ROLES.SYSTEM_ADMIN];
+
+    if (!allowedTargetRoles.includes(role)) {
+      return res.status(400).json({ message: 'Vai trò không hợp lệ' });
+    }
+
+    const targetUser = await User.findById(req.params.id).select('-password');
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const requesterId = String(req.user.id);
+    const targetId = String(targetUser._id);
+    const currentTargetRole = targetUser.role;
+
+    if (requesterId === targetId && currentTargetRole === ROLES.SYSTEM_ADMIN && role !== ROLES.SYSTEM_ADMIN) {
+      return res.status(400).json({ message: 'Không thể tự hạ quyền tài khoản quản trị hệ thống' });
+    }
+
+    targetUser.role = role;
+    await targetUser.save();
+
+    res.json({
+      message: 'Cập nhật vai trò thành công',
+      user: targetUser,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -282,5 +330,6 @@ module.exports = {
   getUserSummary,
   getUserDetailWithApplications,
   getAllUsers,
-  deleteUser
+  deleteUser,
+  updateUserRole,
 };

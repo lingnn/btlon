@@ -56,8 +56,8 @@ const getArticleById = async (req, res) => {
     const article = await Article.findById(req.params.id)
       .populate('authorId', 'fullName email');
     if (!article) return res.status(404).json({ message: 'Bài viết không tồn tại' });
-    // Nếu bài chưa xuất bản, chỉ admin mới xem được
-    if (!article.isPublished && req.user?.role !== 'admin') {
+    // Nếu bài chưa xuất bản thì chặn truy cập ở endpoint public này.
+    if (!article.isPublished) {
       return res.status(403).json({ message: 'Bài viết chưa được xuất bản' });
     }
     // Tăng view count

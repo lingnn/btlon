@@ -14,7 +14,7 @@ interface RegisterPayload {
   phone: string;
   idNumber: string;
   password: string;
-  role: 'candidate' | 'admin';
+  role: 'candidate' | 'content_admin' | 'system_admin';
 }
 
 interface AuthResponse {
@@ -26,7 +26,7 @@ interface AuthResponse {
       username: string;
       email: string;
       fullName: string;
-      role: 'admin' | 'candidate';
+      role: 'candidate' | 'content_admin' | 'system_admin';
     };
     token: string;
   };
@@ -51,7 +51,7 @@ export interface AdminUser {
   email?: string;
   phone?: string;
   idNumber?: string;
-  role: 'admin' | 'candidate';
+  role: 'candidate' | 'content_admin' | 'system_admin';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -59,6 +59,8 @@ export interface AdminUser {
 export interface UserSummary {
   totalUsers: number;
   totalAdmins: number;
+  totalSystemAdmins: number;
+  totalContentAdmins: number;
   totalCandidates: number;
 }
 
@@ -707,6 +709,8 @@ const userAPI = {
     return {
       totalUsers: Number(body?.totalUsers || 0),
       totalAdmins: Number(body?.totalAdmins || 0),
+      totalSystemAdmins: Number(body?.totalSystemAdmins || 0),
+      totalContentAdmins: Number(body?.totalContentAdmins || 0),
       totalCandidates: Number(body?.totalCandidates || 0),
     };
   },
@@ -722,6 +726,29 @@ const userAPI = {
     return {
       user: body?.user,
       applications: Array.isArray(body?.applications) ? body.applications : [],
+    };
+  },
+
+  updateRole: async (
+    token: string,
+    userId: string,
+    role: 'candidate' | 'content_admin' | 'system_admin'
+  ): Promise<{ message: string; user: AdminUser }> => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role }),
+    });
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.message || 'Cập nhật vai trò thất bại');
+
+    return {
+      message: body?.message || 'Cập nhật vai trò thành công',
+      user: body?.user,
     };
   },
 };

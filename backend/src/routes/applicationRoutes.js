@@ -13,7 +13,7 @@ const {
   exportApplications,
   statisticsByMajor
 } = require('../controllers/applicationController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, requireRoles, ROLES } = require('../middleware/authMiddleware');
 
 // Public route (tra cứu kết quả)
 router.get('/tra-cuu', traCuuKetQua);
@@ -28,9 +28,9 @@ router.post('/:id/submit', submitApplication);
 router.delete('/:id', deleteApplication);
 
 // Routes chỉ admin
-router.get('/', adminOnly, getAllApplications);
-router.get('/export', adminOnly, exportApplications);
-router.get('/statistics/by-major', adminOnly, statisticsByMajor);
-router.put('/:id/review', adminOnly, reviewApplication);
+router.get('/', requireRoles(ROLES.CONTENT_ADMIN), getAllApplications);
+router.get('/export', requireRoles(ROLES.CONTENT_ADMIN), exportApplications);
+router.get('/statistics/by-major', requireRoles(ROLES.CONTENT_ADMIN), statisticsByMajor);
+router.put('/:id/review', requireRoles(ROLES.CONTENT_ADMIN), reviewApplication);
 
 module.exports = router;

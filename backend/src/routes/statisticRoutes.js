@@ -5,9 +5,9 @@ const {
   getStatistics,
   exportApplications
 } = require('../controllers/statisticController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, requireRoles, ROLES } = require('../middleware/authMiddleware');
 
-router.use(protect, adminOnly);
+router.use(protect, requireRoles(ROLES.CONTENT_ADMIN));
 
 router.post('/generate', generateAllStatistics);
 router.get('/:type', getStatistics);

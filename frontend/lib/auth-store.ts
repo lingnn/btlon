@@ -7,7 +7,7 @@ interface User {
   username: string;
   email: string;
   fullName: string;
-  role: 'admin' | 'candidate';
+  role: 'candidate' | 'content_admin' | 'system_admin';
   phone?: string;
 }
 
