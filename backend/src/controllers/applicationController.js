@@ -62,6 +62,11 @@ const createApplication = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'Người dùng không tồn tại' });
 
+    const existingByUser = await Application.findOne({ userId });
+    if (existingByUser) {
+      return res.status(400).json({ message: 'Mỗi thí sinh chỉ được nộp 1 hồ sơ' });
+    }
+
     // Lấy thông tin từ user làm mặc định, cho phép ghi đè
     const {
       fullName = user.fullName,
@@ -121,6 +126,9 @@ const createApplication = async (req, res) => {
 
     res.status(201).json(newApp);
   } catch (error) {
+    if (error?.code === 11000 && error?.keyPattern?.userId) {
+      return res.status(400).json({ message: 'Mỗi thí sinh chỉ được nộp 1 hồ sơ' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
