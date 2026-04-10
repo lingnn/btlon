@@ -66,7 +66,7 @@ const applicationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Tạo chỉ mục cho các trường thường xuyên truy vấn
-applicationSchema.index({ userId: 1 });
+applicationSchema.index({ userId: 1 }, { unique: true });
 applicationSchema.index({ applicationCode: 1 }, { unique: true });
 applicationSchema.index({ idNumber: 1 });
 applicationSchema.index({ status: 1 });

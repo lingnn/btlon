@@ -96,6 +96,12 @@ const createApplication = async (req, res) => {
       await validateMethodData(methodId, methodData);
     }
 
+    // Mỗi tài khoản chỉ được tạo 1 hồ sơ
+    const existingApp = await Application.findOne({ userId });
+    if (existingApp) {
+      return res.status(409).json({ message: 'Tài khoản đã có hồ sơ. Mỗi tài khoản chỉ được nộp 1 hồ sơ.' });
+    }
+
     const applicationCode = generateApplicationCode();
     // Kiểm tra trùng mã (trường hợp hiếm)
     const existing = await Application.findOne({ applicationCode });
