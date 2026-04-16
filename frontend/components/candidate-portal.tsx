@@ -92,6 +92,8 @@ type MyApplicationPreference = {
   priority: number;
   majorId?: { _id?: string; name?: string; code?: string };
   methodId?: { _id?: string; name?: string };
+  status?: 'pending' | 'approved' | 'rejected';
+  note?: string;
 };
 
 type MyApplication = {
@@ -736,8 +738,12 @@ export function CandidatePortal() {
                     const submittedAt = app.submissionDate || app.createdAt;
                     const dateText = submittedAt ? new Date(submittedAt).toLocaleDateString('vi-VN') : '-';
 
+                    // Tìm nguyện vọng được chấp nhận (nếu có), nếu không thì lấy nguyện vọng đầu tiên
+                    const approvedPref = app.preferences?.find(p => p.status === 'approved');
+                    const displayPref = approvedPref || app.preferences?.[0];
+                    
                     const program =
-                      app.preferences?.[0]?.majorId?.name ||
+                      displayPref?.majorId?.name ||
                       app.applicationCode ||
                       '-';
 

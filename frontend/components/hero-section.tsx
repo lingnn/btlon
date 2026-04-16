@@ -27,7 +27,7 @@ export function HeroSection() {
                 TUYỂN SINH 2026
               </h1>
               <p className="mb-8 text-base text-white/80 lg:text-lg">
-                Học viện Công nghệ Bưu chính Viễn thông chào đón các bạn học sinh tham gia vào chương trình học tập của chúng.
+                Học viện Công nghệ Bưu chính Viễn thông chào đón các bạn học sinh tham gia vào chương trình học tập của chúng tôi.
               </p>
 
               <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">

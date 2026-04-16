@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/navbar";
 import { HeroSection } from "../components/hero-section";
 import { AdmissionTargets } from "@/components/admission-targets";
+import { ScholarshipPrograms } from "@/components/scholarship-programs";
 import { Footer } from "@/components/footer";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
 
       <main>
         <HeroSection />
+        <ScholarshipPrograms />
         <AdmissionTargets />
       </main>
 
